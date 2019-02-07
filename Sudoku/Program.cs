@@ -8,50 +8,76 @@ namespace Sudoku
 {
     class Program
     {
+        #region variables & structures
+        public struct Move
+        {
+            public int row;
+            public int column;
+            public int number;
+            public bool isGuess;
+            public Move(int r, int c, int n, bool g)
+            {
+                row = r;
+                column = c;
+                number = n;
+                isGuess = g;
+            }
+        }
+
         static int[,] task = new int[9, 9];
         static int[,] pole = new int[9, 9];
         static bool[,,] hinty = new bool[9, 9, 10];
+        static List<Move> pastMoves = new List<Move>();
+        #endregion
+
+        static int i = 0;
 
         static void Main(string[] args)
         {
-            //before start
+            //před startem
             InitializeSudoku();
             ResetHints();
 
-            //before display
+            //zobrazení
             PrintSudoku(true);
 
-            //solving
+            //řešení
             UpdateHints();
             MakeImplications();
-            //TakeGuess(pole, hinty, out pole, out hinty);
+            TakeGuess();
 
-            //after display
+            //zobrazení výsledku
             PrintSudoku(true);
 
-            //validity check
+            //kontrola
             Info();
 
 
-            //end
+            //konec
             Console.ReadKey();
         }
 
+        /// <summary>Info je funkce vypysující shrnující informace o aktuálním stavu sudoku.
+        /// <para>Nejprve zjistí pomocí funkce <see cref="IsSudokuValid()"/> jestli nějaké dvě čísla v mřížce kolidují.</para>
+        /// <para>Poté zkontroluje jestli je sudoku plně vyplněné funkcí <see cref="IsSudokuComplete()"/>.</para>
+        /// <para>Tato funkce je čistě informativní a nemá vliv na chod programu.</para>
+        /// </summary>
         static void Info()
         {
             if (IsSudokuValid() == "správně")
             {
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine("Sudoku v sobě nemá žádné chyby.");
+                Console.WriteLine("Sudoku v sobě nemá žádné kolize.");
                 Console.ForegroundColor = ConsoleColor.White;
             }
             else
             {
                 Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Sudoku v sobě má chybu.");
+                Console.WriteLine("Sudoku v sobě má kolizi.");
                 Console.WriteLine("Error: " + IsSudokuValid());
                 Console.ForegroundColor = ConsoleColor.White;
             }
+
             if (IsSudokuComplete())
             {
                 Console.WriteLine("Sudoku je kompletně vyplněné.");
@@ -61,7 +87,9 @@ namespace Sudoku
                 Console.WriteLine("Pro dokončení sudoku musíš ještě pokračovat.");
             }
         }
-
+        /// <summary>Obsahuje zadání sudoku.
+        /// <para>Přepíše zadání do řešící mřížky a zachovává původní zadání pro pozdější využití.</para>
+        /// </summary>
         static void InitializeSudoku()
         {
             //blank
@@ -115,7 +143,12 @@ namespace Sudoku
                 }
             }
         }
-
+        /// <summary>Vyprázdní tabulku nápověd.
+        /// <para>Tabulka nápověd říká, zda na políčku (row,column) může být číslo (number)</para>     
+        /// <para><code>hinty[row, column, number] = true;</code> ... může být</para>
+        /// <para><code>hinty[row, column, number] = false;</code> ... nemůže být</para>
+        /// <para>Ze začátku resetuje tahle funkce všechny hodnoty na true.</para>  
+        /// </summary>
         static void ResetHints()
         {
             for (int row = 0; row < 9; row++)
@@ -130,7 +163,23 @@ namespace Sudoku
                 }
             }
         }
-
+        /// <summary>Pozmění tabulku nápověd podle vyplnění tabulky.
+        /// <para>Pro každé políčko na kterém je číslo spustí tato funkce tyto funkce:</para>     
+        /// <list type="bullet">
+        /// <item>
+        /// <para><see cref="DeleteHintsOnTile(int row, int column)"/></para>
+        /// </item>
+        /// <item>
+        /// <para><see cref="SetColumnHints(int columnId, int number, bool value)"/></para>
+        /// </item>
+        /// <item>
+        /// <para><see cref="SetRowHints(int rowId, int number, bool value)"/></para>
+        /// </item>
+        /// <item>
+        /// <para><see cref="SetSectorHints(int row, int column, int number, bool value)"/></para>
+        /// </item>
+        /// </list>
+        /// </summary>
         static void UpdateHints()
         {
             for (int row = 0; row < 9; row++)
@@ -143,31 +192,52 @@ namespace Sudoku
                         continue;
                     }
 
-                    DeleteExistingNumbersHints();
+                    DeleteHintsOnTile(row, column);
                     SetColumnHints(column, currentNumber, false);
                     SetRowHints(row, currentNumber, false);
                     SetSectorHints(row, column, currentNumber, false);
                 }
             }
         }
-
-        static void DeleteExistingNumbersHints()
+        /// <summary>
+        /// Zapíše do políčka (row, column) číslo (number). A uloží tento zápis.
+        /// <para>Pokud je tento zápis nejistý (isGuess)=true.</para>
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <param name="number"></param>
+        /// <param name="isGuess"></param>
+        static void SetTile(int row, int column, int number, bool isGuess)
         {
-            for (int row = 0; row < 9; row++)
+            //set tile
+            pole[row, column] = number;
+            //save this move
+            //if its guess mark this move as guess
+            pastMoves.Add(new Move(row,column,number,isGuess));
+            if (isGuess)
             {
-                for (int column = 0; column < 9; column++)
-                {
-                    if (pole[row, column] != 0)
-                    {
-                        for (int hint = 0; hint < 10; hint++)
-                        {
-                            hinty[row, column, hint] = false;
-                        }
-                    }
-                }
+                i++;
+                Console.WriteLine(i);
             }
         }
-
+        /// <summary>
+        /// <para>Smaže všechny nápovědy na políčku (row,column).</para>
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        static void DeleteHintsOnTile(int row, int column)
+        {
+            for (int number = 0; number < 10; number++)
+            {
+                hinty[row, column, number] = false;
+            }
+        }
+        /// <summary>
+        /// <para>Smaže všechny nápovědy pro číslo (number) ve sloupečku (column).</para>
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="number"></param>
+        /// <param name="value"></param>
         static void SetColumnHints(int columnId, int number, bool value)
         {
             for (int row = 0; row < 9; row++)
@@ -175,7 +245,12 @@ namespace Sudoku
                 hinty[row, columnId, number] = value;
             }
         }
-
+        /// <summary>
+        /// <para>Smaže všechny nápovědy pro číslo (number) v řádku (row).</para>
+        /// </summary>
+        /// <param name="rowId"></param>
+        /// <param name="number"></param>
+        /// <param name="value"></param>
         static void SetRowHints(int rowId, int number, bool value)
         {
             for (int column = 0; column < 9; column++)
@@ -183,7 +258,13 @@ namespace Sudoku
                 hinty[rowId, column, number] = value;
             }
         }
-
+        /// <summary>
+        /// <para>Smaže všechny nápovědy pro číslo (number) v sektoru (row - (row % 3), column - (column % 3)).</para>
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <param name="number"></param>
+        /// <param name="value"></param>
         static void SetSectorHints(int row, int column, int number, bool value)
         {
             int startRow = row - (row % 3);
@@ -197,7 +278,14 @@ namespace Sudoku
                 }
             }
         }
-
+        /// <summary>
+        /// Rekurzivní funkce, vyplňující tabulku dle pravidel sudoku.
+        /// <para>Sleduje změny po každém zavolání následujících funkcí. Pokud nastane změna (je vyplněné políčko) zavolá funkce <see cref="UpdateHints()"/> a sama sebe.</para>
+        /// <para>Na každém řádku spustí <see cref="RowImplications(int number, int rowId)"/>.</para>
+        /// <para>Na každém sloupci spustí <see cref="ColumnImplications(int number, int columnId)"/>.</para>
+        /// <para>V každém sektoru spustí <see cref="SectorImplications(int number, int bigRow, int bigColumn)"/>.</para>
+        /// <para>Na každém políčku spustí <see cref="TileImplications(int row, int column)"/>.</para>
+        /// </summary>
         static void MakeImplications()
         {
             bool somethingChanged = false;
@@ -225,11 +313,10 @@ namespace Sudoku
                 {
                     for (int number = 1; number < 10; number++)
                     {
-                        somethingChanged = somethingChanged || SectorImplications(number,bigRow,bigColumn);
+                        somethingChanged = somethingChanged || SectorImplications(number, bigRow, bigColumn);
                     }
                 }
             }
-
             //tile
             for (int row = 0; row < 9; row++)
             {
@@ -239,14 +326,19 @@ namespace Sudoku
                 }
             }
 
-
             if (somethingChanged)
             {
                 UpdateHints();
                 MakeImplications();
             }
         }
-
+        /// <summary>
+        /// <para>Zjistí na kolika pozicích v řádku (rowId) může být číslo (number). Pokud najde pouze jednu možnou pozici. Vloží tam číslo (number).</para>
+        /// <para>Pokud funkce vložila číslo vrací true, jinak false.</para>
+        /// </summary>
+        /// <param name="number"></param>
+        /// <param name="rowId"></param>
+        /// <returns></returns>
         static bool RowImplications(int number, int rowId)
         {
             //jestli je jen na jedné pozici v řádku možné jedno číslo
@@ -262,12 +354,18 @@ namespace Sudoku
             }
             if (countPossibleTiles == 1)
             {
-                pole[rowId, lastColumn] = number;
+                SetTile(rowId, lastColumn, number, false);
                 return true;
             }
             return false;
         }
-
+        /// <summary>
+        /// <para>Zjistí na kolika pozicích ve sloupci (columnId) může být číslo (number). Pokud najde pouze jednu možnou pozici. Vloží tam číslo (number).</para>
+        /// <para>Pokud funkce vložila číslo vrací true, jinak false.</para>
+        /// </summary>
+        /// <param name="number"></param>
+        /// <param name="columnId"></param>
+        /// <returns></returns>
         static bool ColumnImplications(int number, int columnId)
         {
             //jeslit je jen na jedné pozici v sloupci možné jedno číslo
@@ -283,21 +381,28 @@ namespace Sudoku
             }
             if (countPossibleTiles == 1)
             {
-                pole[lastRow, columnId] = number;
+                SetTile(lastRow, columnId, number, false);
                 return true;
             }
             return false;
         }
-
+        /// <summary>
+        /// <para>Zjistí na kolika pozicích v sektoru (bigRow, bigColumn) může být číslo (number). Pokud najde pouze jednu možnou pozici. Vloží tam číslo (number).</para>
+        /// <para>Pokud funkce vložila číslo vrací true, jinak false.</para>
+        /// </summary>
+        /// <param name="number"></param>
+        /// <param name="bigRow"></param>
+        /// <param name="bigColumn"></param>
+        /// <returns></returns>
         static bool SectorImplications(int number, int bigRow, int bigColumn)
         {
             //jestli je jen na jedné pozici v sektoru možné jedno číslo 
             int countPossibleTiles = 0;
             int lastTileRow = 0;
             int lastTileColumn = 0;
-            for (int row = bigRow*3; row < bigRow * 3+3; row++)
+            for (int row = bigRow * 3; row < bigRow * 3 + 3; row++)
             {
-                for (int column = bigColumn * 3; column < bigColumn*3+3; column++)
+                for (int column = bigColumn * 3; column < bigColumn * 3 + 3; column++)
                 {
                     if (hinty[row, column, number])
                     {
@@ -307,20 +412,26 @@ namespace Sudoku
                     }
                 }
             }
-            if(countPossibleTiles == 1)
+            if (countPossibleTiles == 1)
             {
-                pole[lastTileRow,lastTileColumn] = number;
+                SetTile(lastTileRow, lastTileColumn, number, false);
                 return true;
             }
             return false;
         }
-
+        /// <summary>
+        /// <para>Zjistí kolik čísel může být v políčku (row, column). Pokud políčku vyhovuje pouze jedno číslo vloží ho tam.</para>
+        /// <para>Pokud funkce vložila číslo vrací true, jinak false.</para>
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
         static bool TileImplications(int row, int column)
         {
             //jestli je na políčku jen jedno možné číslo
             bool foundOne = false;
             int thatNumber = 0;
-            for (int number = 0; number < 9; number++)
+            for (int number = 1; number < 10; number++)
             {
                 if (foundOne && hinty[row, column, number])
                 {
@@ -332,19 +443,22 @@ namespace Sudoku
                     thatNumber = number;
                 }
             }
+            //nemůže z hintů vyčíst 0, ale může to zůstat inicializované na nulu
             if (thatNumber != 0)
             {
-                pole[row, column] = thatNumber;
+                SetTile(row, column, thatNumber, false);
                 return true;
             }
             return false;
         }
 
+#warning
+
         //duplikuje, hodí jedno číslo dle hintů, zkontroluje a učiní akci
-        static void TakeGuess(int[,] poleP, bool[,,] hintyP, out int[,] poleO, out bool[,,] hintyO)
+        static void TakeGuess()
         {
-            //duplikace
-            int[,] pole = new int[poleP.GetLength(0), poleP.GetLength(1)];
+            #region duplikace
+            /*int[,] pole = new int[poleP.GetLength(0), poleP.GetLength(1)];
             for (int x = 0; x < pole.GetLength(0); x++)
             {
                 for (int y = 0; y < pole.GetLength(1); y++)
@@ -364,7 +478,8 @@ namespace Sudoku
                         hinty[x, y, z] = hintyP[x, y, z];
                     }
                 }
-            }
+            }*/
+            #endregion
 
             //zkusí jedno číslo dle hintů
             for (int x = 0; x < 9; x++)
@@ -377,53 +492,76 @@ namespace Sudoku
                         {
                             if (hinty[x, y, number])
                             {
-                                pole[x, y] = number;
+                                SetTile(x, y, number, true);
+
+                                MakeImplications();
 
                                 //zjistím jak na tom jsme
-                                bool isComplete = IsSudokuComplete(pole);
-                                bool isValid = IsSudokuValid(pole);
-
+                                bool isComplete = IsSudokuComplete();
+                                bool isValid = IsSudokuValid(true);
                                 //konec
-                                if(isComplete && isValid)
+                                if (isComplete && isValid)
                                 {
-                                    poleO = pole;
-                                    hintyO = hinty;
                                     return;
                                 }
                                 //pokračujem
                                 if (!isComplete && isValid)
                                 {
-                                    TakeGuess(pole,hinty,out pole, out hinty);
+                                    TakeGuess();
+                                    return;
                                 }
                                 //vracíme se
                                 if (!isValid)
                                 {
-                                    
+                                    Move lastMove = pastMoves[pastMoves.Count() - 1];
+                                    while (!lastMove.isGuess)
+                                    {
+                                        //vrátí krok
+                                        pole[lastMove.row, lastMove.column] = 0;
+                                        
+                                        pastMoves.RemoveAt(pastMoves.Count() - 1);
+                                        lastMove = pastMoves[pastMoves.Count() - 1];
+                                    }
+                                    //poslední krok je typnutý
+                                    int typ = lastMove.number;
+                                    pole[lastMove.row, lastMove.column] = 0;
+                                    pastMoves.RemoveAt(pastMoves.Count() - 1);
+
+                                    //vypočítat znovu hinty
+                                    ResetHints();
+                                    UpdateHints();
+                                    hinty[lastMove.row, lastMove.column, typ] = false;
+                                    TakeGuess();
+                                    return;
                                 }
                             }
                         }
                     }
                 }
             }
-
-            //vše vyplněné
-            poleO = poleP;
-            hintyO = hintyP;
             return;
         }
-
+#warning
+        /// <summary>
+        /// Vrací string určující správnost sudoku. Spouští na každý řádek, sloupec a sektor následující funkce:
+        /// <para>Na každém řádku spustí <see cref="IsRowValid(int rowId)"/>. Pokud najde chybu vrací "řádek " + (číslo řádku).</para>
+        /// <para>Na každém sloupci spustí <see cref="IsColumnValid(int columnId)"/>. Pokud najde chybu vrací "sloupec " + (číslo sloupce).</para>
+        /// <para>V každém sektoru spustí <see cref="IsSectorValid(int bigRow, int bigColumn)"/>. Pokud najde chybu vrací "sektor " + (číslo sektoru).</para>
+        /// <para>Pokud nenajde chybu vrací "správně"</para>
+        /// </summary>
+        /// <returns></returns>
         static string IsSudokuValid()
         {
             for (int row = 0; row < 9; row++)
             {
                 if (!IsRowValid(row))
-                    return "řádky " + row;
+                    return "řádek " + row;
             }
 
             for (int column = 0; column < 9; column++)
             {
                 if (!IsColumnValid(column))
-                    return "sloupce " + column;
+                    return "sloupec " + column;
             }
 
             for (int bigRow = 0; bigRow < 3; bigRow++)
@@ -431,24 +569,38 @@ namespace Sudoku
                 for (int bigColumn = 0; bigColumn < 3; bigColumn++)
                 {
                     if (!IsSectorValid(bigRow, bigColumn))
-                        return "sektory " + bigRow + " " + bigColumn;
+                        return "sektor " + bigRow + " " + bigColumn;
+                }
+            }
+
+            for (int row = 0; row < 9; row++)
+            {
+                for (int column = 0; column < 9; column++)
+                {
+                    if (!IsTileValid(row, column))
+                        return "políčko " + row + " " + column;
                 }
             }
 
             return "správně";
         }
-
-        static bool IsSudokuValid(int[,] pole)
+        /// <summary>
+        /// Vrací (true) pro "správně" a (false) pro zbytek.
+        /// <see cref="IsSudokuValid()"/>
+        /// </summary>
+        /// <param name="returnBool"></param>
+        /// <returns></returns>
+        static bool IsSudokuValid(bool returnBool)
         {
             for (int row = 0; row < 9; row++)
             {
-                if (!IsRowValid(row,pole))
+                if (!IsRowValid(row))
                     return false;
             }
 
             for (int column = 0; column < 9; column++)
             {
-                if (!IsColumnValid(column, pole))
+                if (!IsColumnValid(column))
                     return false;
             }
 
@@ -456,14 +608,27 @@ namespace Sudoku
             {
                 for (int bigColumn = 0; bigColumn < 3; bigColumn++)
                 {
-                    if (!IsSectorValid(bigRow, bigColumn, pole))
+                    if (!IsSectorValid(bigRow, bigColumn))
+                        return false;
+                }
+            }
+
+            for (int row = 0; row < 9; row++)
+            {
+                for (int column = 0; column < 9; column++)
+                {
+                    if (!IsTileValid(row, column))
                         return false;
                 }
             }
 
             return true;
         }
-
+        /// <summary>
+        /// Spočítá v řádku (rowId) počet všech čísel. Pokud najde jedno číslo 2x, vrací (false), jinak vrací (true).
+        /// </summary>
+        /// <param name="rowId"></param>
+        /// <returns></returns>
         static bool IsRowValid(int rowId)
         {
             bool[] oneToNine = new bool[9];
@@ -474,7 +639,9 @@ namespace Sudoku
 
             for (int column = 0; column < 9; column++)
             {
+                //převde údaj z tabulky na id
                 int currentNumber = pole[rowId, column] - 1;
+                //nepočítá nulu
                 if (currentNumber < 0)
                     continue;
                 if (oneToNine[currentNumber])
@@ -484,7 +651,11 @@ namespace Sudoku
 
             return true;
         }
-
+        /// <summary>
+        /// Spočítá ve sloupci (columnId) počet všech čísel. Pokud najde jedno číslo 2x, vrací (false), jinak vrací (true).
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <returns></returns>
         static bool IsColumnValid(int columnId)
         {
             bool[] oneToNine = new bool[9];
@@ -505,7 +676,12 @@ namespace Sudoku
 
             return true;
         }
-
+        /// <summary>
+        /// Spočítá v sektoru (bigRow, bigColumn) počet všech čísel. Pokud najde jedno číslo 2x, vrací (false), jinak vrací (true).
+        /// </summary>
+        /// <param name="bigRow"></param>
+        /// <param name="bigColumn"></param>
+        /// <returns></returns>
         static bool IsSectorValid(int bigRow, int bigColumn)
         {
             bool[] oneToNine = new bool[9];
@@ -524,6 +700,136 @@ namespace Sudoku
                     if (oneToNine[currentNumber])
                         return false;
                     oneToNine[currentNumber] = true;
+                }
+            }
+
+            return true;
+        }
+        /// <summary>
+        /// Zjistí jestli na políčku (row, column) může být nějaké číslo.
+        /// <para>Jestli na políčku může být 0 čísel --> (false)</para>
+        /// <para>Jinak --> (true)</para>
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        static bool IsTileValid(int row, int column)
+        {
+            int possibleNumbers = 0;
+            for (int hint = 1; hint < 10; hint++)
+            {
+                if (hinty[row,column,hint])
+                {
+                    possibleNumbers++;
+                }
+            }
+            if(possibleNumbers == 0)
+                return false;
+            else
+                return true;
+        }
+        /// <summary>
+        /// Pokud najde prázdné políčko, není sudoku vyplněné a vrací (false), jinak vrátí (true).
+        /// </summary>
+        /// <returns></returns>
+        static bool IsSudokuComplete()
+        {
+            for (int row = 0; row < 9; row++)
+            {
+                for (int column = 0; column < 9; column++)
+                {
+                    if (pole[row, column] == 0)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+        /// <summary>
+        /// Vytiskne sudoku na výstup.
+        /// <para>pretty = false --> 9x9 čísel</para>
+        /// <para>pretty = true --> Tabulka s oddělynými sektory. Barevně odlišené zadání od vyplněných políček.</para>
+        /// </summary>
+        /// <param name="pretty"></param>
+        static void PrintSudoku(bool pretty)
+        {
+            if (!pretty)
+            {
+                for (int row = 0; row < 9; row++)
+                {
+                    for (int column = 0; column < 9; column++)
+                    {
+                        Console.Write(pole[row, column]);
+                        if (column < 8)
+                            Console.Write(" ");
+                    }
+                    Console.WriteLine();
+                }
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.White;
+                for (int row = 0; row < 9; row++)
+                {
+                    if (row > 0)
+                        Console.WriteLine("|");
+                    if ((row) % 3 == 0)
+                        Console.WriteLine("+-----+-----+-----+");
+                    for (int column = 0; column < 9; column++)
+                    {
+                        if ((column) % 3 == 0)
+                            Console.Write("|");
+                        else
+                            Console.Write(" ");
+                        if (pole[row, column] == 0)
+                        {
+                            ConsoleColor before = Console.ForegroundColor;
+                            Console.ForegroundColor = ConsoleColor.Black;
+                            Console.Write(".");
+                            Console.ForegroundColor = before;
+                        }
+                        else
+                        {
+                            if (task[row, column] != 0)
+                            {
+                                Console.ForegroundColor = ConsoleColor.DarkGray;
+                            }
+                            else
+                            {
+                                Console.ForegroundColor = ConsoleColor.White;
+                            }
+                            Console.Write(pole[row, column]);
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                    }
+                }
+                Console.Write("|\n+-----+-----+-----+");
+            }
+            Console.WriteLine();
+        }
+    }
+}
+/*
+ static bool IsSudokuValid(int[,] pole)
+        {
+            for (int row = 0; row < 9; row++)
+            {
+                if (!IsRowValid(row, pole))
+                    return false;
+            }
+
+            for (int column = 0; column < 9; column++)
+            {
+                if (!IsColumnValid(column, pole))
+                    return false;
+            }
+
+            for (int bigRow = 0; bigRow < 3; bigRow++)
+            {
+                for (int bigColumn = 0; bigColumn < 3; bigColumn++)
+                {
+                    if (!IsSectorValid(bigRow, bigColumn, pole))
+                        return false;
                 }
             }
 
@@ -596,20 +902,6 @@ namespace Sudoku
             return true;
         }
 
-        static bool IsSudokuComplete()
-        {
-            for (int row = 0; row < 9; row++)
-            {
-                for (int colum = 0; colum < 9; colum++)
-                {
-                    if (pole[row, colum] == 0)
-                        return false;
-                }
-            }
-
-            return true;
-        }
-
         static bool IsSudokuComplete(int[,] pole)
         {
             for (int row = 0; row < 9; row++)
@@ -624,55 +916,6 @@ namespace Sudoku
             return true;
         }
 
-        static void PrintSudoku(bool pretty)
-        {
-            if (!pretty)
-            {
-                for (int row = 0; row < 9; row++)
-                {
-                    for (int column = 0; column < 9; column++)
-                    {
-                        Console.Write(pole[row, column]);
-                        if (column < 8)
-                            Console.Write(" ");
-                    }
-                    Console.WriteLine();
-                }
-            }
-            else
-            {
-                for (int row = 0; row < 9; row++)
-                {
-                    if (row > 0)
-                        Console.WriteLine("|");
-                    if ((row) % 3 == 0)
-                        Console.WriteLine("+-----+-----+-----+");
-                    for (int column = 0; column < 9; column++)
-                    {
-                        if ((column) % 3 == 0)
-                            Console.Write("|");
-                        else
-                            Console.Write(" ");
-                        if (pole[row, column] == 0)
-                            Console.Write(".");
-                        else
-                        {
-                            if (task[row, column] != 0)
-                            {
-                                Console.ForegroundColor = ConsoleColor.DarkGray;
-                            }
-                            else
-                            {
-                                Console.ForegroundColor = ConsoleColor.White;
-                            }
-                            Console.Write(pole[row, column]);
-                            Console.ForegroundColor = ConsoleColor.White;
-                        }
-                    }
-                }
-                Console.Write("|\n+-----+-----+-----+");
-            }
-            Console.WriteLine();
-        }
-    }
-}
+     
+     
+     */
