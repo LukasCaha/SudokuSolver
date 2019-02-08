@@ -28,12 +28,14 @@ namespace Sudoku
         static int[,] pole = new int[9, 9];
         static bool[,,] hinty = new bool[9, 9, 10];
         static List<Move> pastMoves = new List<Move>();
-        #endregion
 
-        static int i = 0;
+        //benchmarks
+        static int numberOfGuesses = 0;
+        #endregion
 
         static void Main(string[] args)
         {
+
             //před startem
             InitializeSudoku();
             ResetHints();
@@ -44,7 +46,7 @@ namespace Sudoku
             //řešení
             UpdateHints();
             MakeImplications();
-            TakeGuess();
+            TakeGuess(0, 0, 1);
 
             //zobrazení výsledku
             PrintSudoku(true);
@@ -52,7 +54,7 @@ namespace Sudoku
             //kontrola
             Info();
 
-
+            Console.WriteLine("Computational complexity:" + numberOfGuesses);
             //konec
             Console.ReadKey();
         }
@@ -123,7 +125,16 @@ namespace Sudoku
                                     { 8,0,0,0,0,0,0,0,0 },
                                     { 0,0,0,0,7,6,0,0,0 },
                                     { 0,7,5,0,0,8,1,0,0 }};*/
-
+            //anti-my program?
+            /*task = new int[,] {     { 0,0,0,0,0,0,0,0,0 },
+                                    { 0,0,0,0,0,3,0,8,5 },
+                                    { 0,0,1,0,2,0,0,0,0 },
+                                    { 0,0,0,5,0,7,0,0,0 },
+                                    { 0,0,4,0,0,0,1,0,0 },
+                                    { 0,9,0,0,0,0,0,0,0 },
+                                    { 5,0,0,0,0,0,0,7,3 },
+                                    { 0,0,2,0,1,0,0,0,0 },
+                                    { 0,0,0,0,4,0,0,0,9 }};*/
             //prej hardest
             task = new int[,] {     { 8,0,0,0,0,0,0,0,0 },
                                     { 0,0,3,6,0,0,0,0,0 },
@@ -213,11 +224,12 @@ namespace Sudoku
             pole[row, column] = number;
             //save this move
             //if its guess mark this move as guess
-            pastMoves.Add(new Move(row,column,number,isGuess));
+            pastMoves.Add(new Move(row, column, number, isGuess));
             if (isGuess)
             {
-                i++;
-                Console.WriteLine(i);
+                numberOfGuesses++;
+                //Console.WriteLine(i + " " + pastMoves.Count());
+                //Console.ReadKey();
             }
         }
         /// <summary>
@@ -451,97 +463,81 @@ namespace Sudoku
             }
             return false;
         }
-
-#warning
-
-        //duplikuje, hodí jedno číslo dle hintů, zkontroluje a učiní akci
-        static void TakeGuess()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="number"></param>
+        static void TakeGuess(int x, int y, int number)
         {
-            #region duplikace
-            /*int[,] pole = new int[poleP.GetLength(0), poleP.GetLength(1)];
-            for (int x = 0; x < pole.GetLength(0); x++)
-            {
-                for (int y = 0; y < pole.GetLength(1); y++)
-                {
-                    pole[x, y] = poleP[x, y];
-                }
-            }
 
-            bool[,,] hinty = new bool[hintyP.GetLength(0), hintyP.GetLength(1), hintyP.GetLength(2)];
-            for (int x = 0; x < hinty.GetLength(0); x++)
+            if (pole[x, y] == 0)
             {
-                for (int y = 0; y < hinty.GetLength(1); y++)
+                //pro každé číslo
+                //zapni rekurzi
+                for (number = 1; number < 10; number++)
                 {
-                    for (int z = 0; z < hinty.GetLength(1); z++)
+                    if (hinty[x, y, number])
                     {
-
-                        hinty[x, y, z] = hintyP[x, y, z];
-                    }
-                }
-            }*/
-            #endregion
-
-            //zkusí jedno číslo dle hintů
-            for (int x = 0; x < 9; x++)
-            {
-                for (int y = 0; y < 9; y++)
-                {
-                    if (pole[x, y] == 0)
-                    {
-                        for (int number = 1; number < 10; number++)
+                        start:
+                        SetTile(x, y, number, true);
+                        MakeImplications();
+                        //zjistím jak na tom jsme
+                        bool isComplete = IsSudokuComplete();
+                        bool isValid = IsSudokuValid(true);
+                        
+                        //konec
+                        if (isComplete && isValid)
                         {
-                            if (hinty[x, y, number])
+                            return;
+                        }
+                        //pokračujem
+                        if (!isComplete && isValid)
+                        {
+                            TakeGuess(x, y, 1);
+                            return;
+                        }
+                        //vracíme se
+                        if (!isValid)
+                        {
+                            delete:
+                            Move lastMove = pastMoves[pastMoves.Count() - 1];
+                            while (!lastMove.isGuess)
                             {
-                                SetTile(x, y, number, true);
+                                //vrátí krok
+                                pole[lastMove.row, lastMove.column] = 0;
 
-                                MakeImplications();
-
-                                //zjistím jak na tom jsme
-                                bool isComplete = IsSudokuComplete();
-                                bool isValid = IsSudokuValid(true);
-                                //konec
-                                if (isComplete && isValid)
-                                {
-                                    return;
-                                }
-                                //pokračujem
-                                if (!isComplete && isValid)
-                                {
-                                    TakeGuess();
-                                    return;
-                                }
-                                //vracíme se
-                                if (!isValid)
-                                {
-                                    Move lastMove = pastMoves[pastMoves.Count() - 1];
-                                    while (!lastMove.isGuess)
-                                    {
-                                        //vrátí krok
-                                        pole[lastMove.row, lastMove.column] = 0;
-                                        
-                                        pastMoves.RemoveAt(pastMoves.Count() - 1);
-                                        lastMove = pastMoves[pastMoves.Count() - 1];
-                                    }
-                                    //poslední krok je typnutý
-                                    int typ = lastMove.number;
-                                    pole[lastMove.row, lastMove.column] = 0;
-                                    pastMoves.RemoveAt(pastMoves.Count() - 1);
-
-                                    //vypočítat znovu hinty
-                                    ResetHints();
-                                    UpdateHints();
-                                    hinty[lastMove.row, lastMove.column, typ] = false;
-                                    TakeGuess();
-                                    return;
-                                }
+                                pastMoves.RemoveAt(pastMoves.Count() - 1);
+                                lastMove = pastMoves[pastMoves.Count() - 1];
                             }
+                            //poslední krok je typnutý
+                            number = lastMove.number+1;
+                            pole[lastMove.row, lastMove.column] = 0;
+                            x = lastMove.row;
+                            y = lastMove.column;
+                            pastMoves.RemoveAt(pastMoves.Count() - 1);
+                            if (number > 9)
+                            {
+                                goto delete;
+                            }
+
+                            //vypočítat znovu hinty
+                            ResetHints();
+                            UpdateHints();
+                            goto start;
                         }
                     }
                 }
             }
-            return;
+            y++;
+            if (y > 8)
+                x++;
+            y %= 9;
+            if (y > 8 || x > 8)
+                return;
+            TakeGuess(x, y, 1);
         }
-#warning
         /// <summary>
         /// Vrací string určující správnost sudoku. Spouští na každý řádek, sloupec a sektor následující funkce:
         /// <para>Na každém řádku spustí <see cref="IsRowValid(int rowId)"/>. Pokud najde chybu vrací "řádek " + (číslo řádku).</para>
@@ -715,15 +711,17 @@ namespace Sudoku
         /// <returns></returns>
         static bool IsTileValid(int row, int column)
         {
+            if (pole[row, column] != 0)
+                return true;
             int possibleNumbers = 0;
             for (int hint = 1; hint < 10; hint++)
             {
-                if (hinty[row,column,hint])
+                if (hinty[row, column, hint])
                 {
                     possibleNumbers++;
                 }
             }
-            if(possibleNumbers == 0)
+            if (possibleNumbers == 0)
                 return false;
             else
                 return true;
@@ -753,6 +751,7 @@ namespace Sudoku
         /// <param name="pretty"></param>
         static void PrintSudoku(bool pretty)
         {
+            Console.Clear();
             if (!pretty)
             {
                 for (int row = 0; row < 9; row++)
@@ -809,113 +808,3 @@ namespace Sudoku
         }
     }
 }
-/*
- static bool IsSudokuValid(int[,] pole)
-        {
-            for (int row = 0; row < 9; row++)
-            {
-                if (!IsRowValid(row, pole))
-                    return false;
-            }
-
-            for (int column = 0; column < 9; column++)
-            {
-                if (!IsColumnValid(column, pole))
-                    return false;
-            }
-
-            for (int bigRow = 0; bigRow < 3; bigRow++)
-            {
-                for (int bigColumn = 0; bigColumn < 3; bigColumn++)
-                {
-                    if (!IsSectorValid(bigRow, bigColumn, pole))
-                        return false;
-                }
-            }
-
-            return true;
-        }
-
-        static bool IsRowValid(int rowId, int[,] pole)
-        {
-            bool[] oneToNine = new bool[9];
-            for (int i = 0; i < 9; i++)
-            {
-                oneToNine[i] = false;
-            }
-
-            for (int column = 0; column < 9; column++)
-            {
-                int currentNumber = pole[rowId, column] - 1;
-                if (currentNumber < 0)
-                    continue;
-                if (oneToNine[currentNumber])
-                    return false;
-                oneToNine[currentNumber] = true;
-            }
-
-            return true;
-        }
-
-        static bool IsColumnValid(int columnId, int[,] pole)
-        {
-            bool[] oneToNine = new bool[9];
-            for (int i = 0; i < 9; i++)
-            {
-                oneToNine[i] = false;
-            }
-
-            for (int row = 0; row < 9; row++)
-            {
-                int currentNumber = pole[row, columnId] - 1;
-                if (currentNumber < 0)
-                    continue;
-                if (oneToNine[currentNumber])
-                    return false;
-                oneToNine[currentNumber] = true;
-            }
-
-            return true;
-        }
-
-        static bool IsSectorValid(int bigRow, int bigColumn, int[,] pole)
-        {
-            bool[] oneToNine = new bool[9];
-            for (int i = 0; i < 9; i++)
-            {
-                oneToNine[i] = false;
-            }
-
-            for (int row = 0; row < 3; row++)
-            {
-                for (int column = 0; column < 3; column++)
-                {
-                    int currentNumber = pole[bigRow * 3 + row, bigColumn * 3 + column] - 1;
-                    if (currentNumber < 0)
-                        continue;
-                    if (oneToNine[currentNumber])
-                        return false;
-                    oneToNine[currentNumber] = true;
-                }
-            }
-
-            return true;
-        }
-
-        static bool IsSudokuComplete(int[,] pole)
-        {
-            for (int row = 0; row < 9; row++)
-            {
-                for (int column = 0; column < 9; column++)
-                {
-                    if (pole[row, column] == 0)
-                        return false;
-                }
-            }
-
-            return true;
-        }
-
-     
-     
-     */
