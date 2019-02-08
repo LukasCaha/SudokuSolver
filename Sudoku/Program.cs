@@ -9,12 +9,26 @@ namespace Sudoku
     class Program
     {
         #region variables & structures
+        /// <summary>
+        /// <para>Struktura reprezentující jeden "krok" ve vyplňování sudoku. 
+        /// Jelikož můžu napsat číslo pouze na prázdnou pozici, stačí nám zaznamenat pozici (row, column) a číslo (number), které jsme na pozici zapsali.
+        /// Proměnná (isGuess) je true u kroků, které nejsou podloženy logikou vycházející z pravidel.</para>
+        /// 
+        /// <para>Struktura obsahuje konstruktor, který přebírá všechny hodnoty proměnných a předává je stuktuře.</para>
+        /// </summary>
         public struct Move
         {
             public int row;
             public int column;
             public int number;
             public bool isGuess;
+            /// <summary>
+            /// Konstruktor struktury <see cref="Move"/>
+            /// </summary>
+            /// <param name="r">Řádek</param>
+            /// <param name="c">Sloupec</param>
+            /// <param name="n">Číslo</param>
+            /// <param name="g">Je tenhle krok logicky podložený --> (false) jinak --> (true)</param>
             public Move(int r, int c, int n, bool g)
             {
                 row = r;
@@ -24,57 +38,67 @@ namespace Sudoku
             }
         }
 
+        /// <summary>
+        /// Dvojrozměrné pole ve kterém je uložené zadání.
+        /// <para>Později se hodí mít zadání uložené, abychom rozpoznali, které čísla můžeme nebo nemůžeme měnit.</para>
+        /// <para>Na každém políčku můžou být čísla (1-9) --> hodnoty vyplnění, nebo (0) --> políčko je prázdné.</para>
+        /// </summary>
         static int[,] task = new int[9, 9];
+        /// <summary>
+        /// Tato proměnná má v sobě uloženou aktuální pozici mřížky na sudoku.
+        /// <para>Na každém políčku můžou být čísla (1-9) --> hodnoty vyplnění, nebo (0) --> políčko je prázdné.</para>
+        /// </summary>
         static int[,] pole = new int[9, 9];
+        /// <summary>
+        /// V tomto trojrozměrním poli je uložené, jestli na souřadnicích (x,y) může být číslo (n) --> <code>hinty[x, y, n]</code>
+        /// <para><code>hinty[x, y, n]</code> (true) --> může být, (false) --> nemůže být</para>
+        /// </summary>
         static bool[,,] hinty = new bool[9, 9, 10];
+        /// <summary>
+        /// List všech kroků, které vedli ze zadání do aktuální podoby, používané na vracení tahů.
+        /// <para><code>pastMoves.RemoveAt(pastMoves.Count() - 1)</code> vrátí poslední krok.</para>
+        /// <para><code>pastMoves.Add(<see cref="Move"/>)</code> vrátí poslední krok.</para>
+        /// </summary>
         static List<Move> pastMoves = new List<Move>();
 
-        //benchmarks
+        //benchmarks nepřispívá k řešení
         static int numberOfGuesses = 0;
+        static int depth = 0;
+        static int maxDepth = 0;
+        static int averageComplexity = 0;
+        static int maximumComplexity=0;
+        static int counter=0;
         static List<string> sudokus = new List<string>();
         #endregion
 
         static void Main(string[] args)
         {
             //Načte všechna zadání ze souboru
-            LoadFromFile("zadani.txt");
-
+            LoadFromFile("../zadani/jednoduche.txt");
+            //LoadFromFile("../zadani/extremni.txt");
+            
             foreach (string sudoku in sudokus)
             {
+                //přenese sudoku do (task) pole
                 SudokuToTask(sudoku);
+                //připraví a resetuje vše pro řešení nového sudoku
                 InitializeSudoku();
+                //vytiskne zadání
                 //PrintSudoku(true);
+                //obnoví všechny nápovědy
                 UpdateHints();
+                //zkusí řešit sudoku logicky
                 MakeImplications();
-                TakeGuess(0, 0, 1);
+                //začne střídavě rekurzivně hádat a logicky řešit sudoku
+                TakeGuess(0, 0);
+                //vytiskne řešení
                 //PrintSudoku(true);
-                //Info();
-                if (numberOfGuesses > 60000)
-                {
-                    PrintSudoku(true);
-                    Info();
-                }
+                //vytiskne údaje o řešení sudoku
+                Info(true);
             }
-            /*
-            //před startem
-            InitializeSudoku();
-            ResetHints();
-
-            //zobrazení
-            PrintSudoku(true);
-
-            //řešení
-            UpdateHints();
-            MakeImplications();
-            TakeGuess(0, 0, 1);
-
-            //zobrazení výsledku
-            PrintSudoku(true);
-
-            //kontrola
-            Info();*/
-
+            
             //konec
+            Console.WriteLine("End");
             Console.ReadKey();
         }
 
@@ -83,90 +107,58 @@ namespace Sudoku
         /// <para>Poté zkontroluje jestli je sudoku plně vyplněné funkcí <see cref="IsSudokuComplete()"/>.</para>
         /// <para>Tato funkce je čistě informativní a nemá vliv na chod programu.</para>
         /// </summary>
-        static void Info()
+        static void Info(bool compact)
         {
-            if (IsSudokuValid() == "správně")
+            if (compact)
             {
-                Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine("Sudoku v sobě nemá žádné kolize.");
-                Console.ForegroundColor = ConsoleColor.White;
+                if (IsSudokuValid(true) && IsSudokuComplete())
+                {
+                    maximumComplexity = Math.Max(maximumComplexity, numberOfGuesses);
+                    averageComplexity = (averageComplexity * counter + numberOfGuesses) / ++counter;
+                    Console.WriteLine("complex:" + numberOfGuesses + " \taverage:" + averageComplexity + " \tmax complex:" + maximumComplexity + " \tmax depth:" + maxDepth);
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine("Error: " + IsSudokuValid() + " | " + IsSudokuComplete());
+                    Console.ReadKey();
+                }
             }
             else
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine("Sudoku v sobě má kolizi.");
-                Console.WriteLine("Error: " + IsSudokuValid());
-                Console.ForegroundColor = ConsoleColor.White;
-            }
+                if (IsSudokuValid() == "správně")
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.WriteLine("Sudoku v sobě nemá žádné kolize.");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine("Sudoku v sobě má kolizi.");
+                    Console.WriteLine("Error: " + IsSudokuValid());
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
 
-            if (IsSudokuComplete())
-            {
-                Console.WriteLine("Sudoku je kompletně vyplněné.");
+                if (IsSudokuComplete())
+                {
+                    Console.WriteLine("Sudoku je kompletně vyplněné.");
+                }
+                else
+                {
+                    Console.WriteLine("Pro dokončení sudoku musíš ještě pokračovat.");
+                }
+                maximumComplexity = Math.Max(maximumComplexity, numberOfGuesses);
+                averageComplexity = (averageComplexity * counter + numberOfGuesses) / ++counter;
+                Console.WriteLine("Computational complexity:" + numberOfGuesses + " at average of:" + averageComplexity + " maximum complexity:" + maximumComplexity + " maximum depth:" + maxDepth);
             }
-            else
-            {
-                Console.WriteLine("Pro dokončení sudoku musíš ještě pokračovat.");
-            }
-            Console.WriteLine("Computational complexity:" + numberOfGuesses);
         }
-        /// <summary>Obsahuje zadání sudoku.
+        /// <summary>Připraví program na řešení nového sudoku
         /// <para>Přepíše zadání do řešící mřížky a zachovává původní zadání pro pozdější využití.</para>
+        /// <para>Resetuje všechny ostatní proměnné.</para>
         /// </summary>
         static void InitializeSudoku()
         {
-
-            //blank
-            /*task = new int[,] {   { 0,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,0,0,0,0,0 }};*/
-
-            //easy
-            /*task = new int[,] { { 5,3,0,0,7,0,0,0,0 },
-                                { 6,0,0,1,9,5,0,0,0 },
-                                { 0,9,8,0,0,0,0,6,0 },
-                                { 8,0,0,0,6,0,0,0,3 },
-                                { 4,0,0,8,0,3,0,0,1 },
-                                { 7,0,0,0,2,0,0,0,6 },
-                                { 0,6,0,0,0,0,2,8,0 },
-                                { 0,0,0,4,1,9,0,0,5 },
-                                { 0,0,0,0,8,0,0,7,9 } };*/
-
-            /*task = new int[,] {     { 0,3,0,2,0,0,0,0,6 },
-                                    { 0,0,0,0,0,9,0,0,4 },
-                                    { 7,6,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,5,0,7,0,0 },
-                                    { 0,0,0,0,0,1,8,6,0 },
-                                    { 0,5,0,4,8,0,0,9,0 },
-                                    { 8,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,7,6,0,0,0 },
-                                    { 0,7,5,0,0,8,1,0,0 }};*/
-            //anti-my program?
-            /*task = new int[,] {     { 0,0,0,0,0,0,0,0,0 },
-                                    { 0,0,0,0,0,3,0,8,5 },
-                                    { 0,0,1,0,2,0,0,0,0 },
-                                    { 0,0,0,5,0,7,0,0,0 },
-                                    { 0,0,4,0,0,0,1,0,0 },
-                                    { 0,9,0,0,0,0,0,0,0 },
-                                    { 5,0,0,0,0,0,0,7,3 },
-                                    { 0,0,2,0,1,0,0,0,0 },
-                                    { 0,0,0,0,4,0,0,0,9 }};*/
-            //prej hardest
-            /*task = new int[,] {     { 8,0,0,0,0,0,0,0,0 },
-                                    { 0,0,3,6,0,0,0,0,0 },
-                                    { 0,7,0,0,9,0,2,0,0 },
-                                    { 0,5,0,0,0,7,0,0,0 },
-                                    { 0,0,0,0,4,5,7,0,0 },
-                                    { 0,0,0,1,0,0,0,3,0 },
-                                    { 0,0,1,0,0,0,0,6,8 },
-                                    { 0,0,8,5,0,0,0,1,0 },
-                                    { 0,9,0,0,0,0,4,0,0 }};*/
-
             for (int row = 0; row < 9; row++)
             {
                 for (int column = 0; column < 9; column++)
@@ -180,6 +172,8 @@ namespace Sudoku
             pastMoves.Clear();
 
             numberOfGuesses = 0;
+            depth = 0;
+            maxDepth = 0;
         }
         /// <summary>Vyprázdní tabulku nápověd.
         /// <para>Tabulka nápověd říká, zda na políčku (row,column) může být číslo (number)</para>     
@@ -241,10 +235,10 @@ namespace Sudoku
         /// Zapíše do políčka (row, column) číslo (number). A uloží tento zápis.
         /// <para>Pokud je tento zápis nejistý (isGuess)=true.</para>
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="column"></param>
-        /// <param name="number"></param>
-        /// <param name="isGuess"></param>
+        /// <param name="row">Řádek do kterého vkládáme.</param>
+        /// <param name="column">Sloupeček do kterého vkládáme.</param>
+        /// <param name="number">Číslo které vkládáme.</param>
+        /// <param name="isGuess">Jestli je tento krok logicky podložený --> (false) nebo je pouhým typem --> (true).</param>
         static void SetTile(int row, int column, int number, bool isGuess)
         {
             //set tile
@@ -255,8 +249,8 @@ namespace Sudoku
             if (isGuess)
             {
                 numberOfGuesses++;
-                //Console.WriteLine(i + " " + pastMoves.Count());
-                //Console.ReadKey();
+                depth++;
+                maxDepth = Math.Max(depth,maxDepth);
             }
         }
         /// <summary>
@@ -491,79 +485,85 @@ namespace Sudoku
             return false;
         }
         /// <summary>
-        /// 
+        /// Funkce rekurzivně hádá čísla a pokud je uhodne špatně, vrací se zpět pomocí proměnné <see cref="pastMoves;"/>.
         /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="number"></param>
-        static void TakeGuess(int x, int y, int number)
+        /// <param name="x">Řádek aktuálního políčka</param>
+        /// <param name="y">Sloupec aktuálního políčka</param>
+        static void TakeGuess(int x, int y)
         {
-
+            //pokud je políčko prázdné
             if (pole[x, y] == 0)
             {
-                //pro každé číslo
-                //zapni rekurzi
-                for (number = 1; number < 10; number++)
+                //for + podmínka projdou postupně všechny možné možnosti pro políčko (x,y)
+                for (int number = 1; number < 10; number++)
                 {
                     if (hinty[x, y, number])
                     {
-                        start:
-                        SetTile(x, y, number, true);
-                        MakeImplications();
-                        //zjistím jak na tom jsme
-                        bool isComplete = IsSudokuComplete();
-                        bool isValid = IsSudokuValid(true);
-                        
-                        //konec
-                        if (isComplete && isValid)
+                        //tento cyklus opouštím pouze přes returny v podmínkách
+                        while (true)
                         {
-                            return;
-                        }
-                        //pokračujem
-                        if (!isComplete && isValid)
-                        {
-                            TakeGuess(x, y, 1);
-                            return;
-                        }
-                        //vracíme se
-                        if (!isValid)
-                        {
-                            delete:
-                            Move lastMove = pastMoves[pastMoves.Count() - 1];
-                            while (!lastMove.isGuess)
-                            {
-                                //vrátí krok
-                                pole[lastMove.row, lastMove.column] = 0;
+                            //toto číslo pouze hádám
+                            SetTile(x, y, number, true);
+                            MakeImplications();
+                            //zjištění stavu tabulky správnost a kompletnost
+                            bool isComplete = IsSudokuComplete();
+                            bool isValid = IsSudokuValid(true);
 
-                                pastMoves.RemoveAt(pastMoves.Count() - 1);
-                                lastMove = pastMoves[pastMoves.Count() - 1];
-                            }
-                            //poslední krok je typnutý
-                            number = lastMove.number+1;
-                            pole[lastMove.row, lastMove.column] = 0;
-                            x = lastMove.row;
-                            y = lastMove.column;
-                            pastMoves.RemoveAt(pastMoves.Count() - 1);
-                            if (number > 9)
+                            //sudoku vyřešené
+                            if (isComplete && isValid)
                             {
-                                goto delete;
+                                //konec
+                                return;
                             }
+                            //nevyřešené ale správně
+                            if (!isComplete && isValid)
+                            {
+                                //hádá další čísla
+                                TakeGuess(x, y);
+                                return;
+                            }
+                            //vrátím se zpět
+                            if (!isValid)
+                            {
+                                do
+                                {
+                                    //vrátím všechny logické kroky
+                                    Move lastMove = pastMoves[pastMoves.Count() - 1];
+                                    while (!lastMove.isGuess)
+                                    {
+                                        //vrátí krok
+                                        pole[lastMove.row, lastMove.column] = 0;
 
-                            //vypočítat znovu hinty
-                            ResetHints();
-                            UpdateHints();
-                            goto start;
+                                        pastMoves.RemoveAt(pastMoves.Count() - 1);
+                                        lastMove = pastMoves[pastMoves.Count() - 1];
+                                    }
+                                    //a pak ještě ten který jsem hádal
+                                    pole[lastMove.row, lastMove.column] = 0;
+                                    x = lastMove.row;
+                                    y = lastMove.column;
+                                    number = lastMove.number + 1;
+                                    pastMoves.RemoveAt(pastMoves.Count() - 1);
+                                    depth--;
+                                } while (number > 9);
+                                // ^--- pokud se vrátím na políčko, kde jsem už vyčerpal všechny možnosti, je také špatně uhodnuté, tedy se musím vrátit ještě jednou
+
+                                //vypočítat znovu nápovědy
+                                ResetHints();
+                                UpdateHints();
+                            }
                         }
                     }
                 }
             }
+            //pokud dojdu sem, je jasné, že na políčku (x,y) je číslo => posunu se o políčko
             y++;
             if (y > 8)
                 x++;
             y %= 9;
             if (y > 8 || x > 8)
                 return;
-            TakeGuess(x, y, 1);
+            //hádám znovu
+            TakeGuess(x, y);
         }
         /// <summary>
         /// Vrací string určující správnost sudoku. Spouští na každý řádek, sloupec a sektor následující funkce:
@@ -855,6 +855,33 @@ namespace Sudoku
                 }
             }
         }
+        static void RotateTask90Deg()
+        {
+            int[,] copy = new int[9, 9];
+            for (int row = 0; row < 9; row++)
+            {
+                for (int column = 0; column < 9; column++)
+                {
+                    copy[row, column] = task[row, column];
+                }
+            }
+            for (int row = 0; row < 9; row++)
+            {
+                for (int column = 0; column < 9; column++)
+                {
+                    task[row, column] = copy[8-column, row];
+                }
+            }
+        }
+        static void TrySameSudokuRotated(int iteration)
+        {
+            RotateTask90Deg();
+            InitializeSudoku();
+            UpdateHints();
+            MakeImplications();
+            TakeGuess(0, 0);
+        }
+
         #endregion
     }
 }

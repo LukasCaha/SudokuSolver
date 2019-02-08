@@ -4,3 +4,4 @@ C:\Users\Lukas\Desktop\MFF\1819zim\PRG\zapoctak\Sudoku\Sudoku\bin\Release\Sudoku
 C:\Users\Lukas\Desktop\MFF\1819zim\PRG\zapoctak\Sudoku\Sudoku\obj\Release\Sudoku.csproj.CoreCompileInputs.cache
 C:\Users\Lukas\Desktop\MFF\1819zim\PRG\zapoctak\Sudoku\Sudoku\obj\Release\Sudoku.exe
 C:\Users\Lukas\Desktop\MFF\1819zim\PRG\zapoctak\Sudoku\Sudoku\obj\Release\Sudoku.pdb
+C:\Users\Lukas\Desktop\MFF\1819zim\PRG\zapoctak\Sudoku\Sudoku\obj\Release\Sudoku.csprojAssemblyReference.cache
