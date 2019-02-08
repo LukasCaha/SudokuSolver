@@ -65,6 +65,7 @@ namespace Sudoku
         static int numberOfGuesses = 0;
         static int depth = 0;
         static int maxDepth = 0;
+        static int maxOverallDepth = 0;
         static int averageComplexity = 0;
         static int maximumComplexity=0;
         static int counter=0;
@@ -92,13 +93,13 @@ namespace Sudoku
                 //začne střídavě rekurzivně hádat a logicky řešit sudoku
                 TakeGuess(0, 0);
                 //vytiskne řešení
-                //PrintSudoku(true);
+                PrintSudoku(true);
                 //vytiskne údaje o řešení sudoku
-                Info(true);
+                Info(false);
             }
-            
+
             //konec
-            Console.WriteLine("End");
+            EndInfo();
             Console.ReadKey();
         }
 
@@ -150,8 +151,20 @@ namespace Sudoku
                 }
                 maximumComplexity = Math.Max(maximumComplexity, numberOfGuesses);
                 averageComplexity = (averageComplexity * counter + numberOfGuesses) / ++counter;
-                Console.WriteLine("Computational complexity:" + numberOfGuesses + " at average of:" + averageComplexity + " maximum complexity:" + maximumComplexity + " maximum depth:" + maxDepth);
+                Console.WriteLine("Computational complexity:\t" + numberOfGuesses);
+                Console.WriteLine("Maximal depth:\t\t\t" + maxDepth);
             }
+        }
+        /// <summary>
+        /// Finální statistické údaje o všech řešených sudoku.
+        /// </summary>
+        static void EndInfo()
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine("\nFinal statistics");
+            Console.WriteLine("Average computational complexity:\t" + averageComplexity);
+            Console.WriteLine("Maximal computational complexity:\t" + maximumComplexity);
+            Console.WriteLine("Maximal overall depth:\t\t\t" + maxOverallDepth);
         }
         /// <summary>Připraví program na řešení nového sudoku
         /// <para>Přepíše zadání do řešící mřížky a zachovává původní zadání pro pozdější využití.</para>
@@ -251,6 +264,7 @@ namespace Sudoku
                 numberOfGuesses++;
                 depth++;
                 maxDepth = Math.Max(depth,maxDepth);
+                maxOverallDepth = Math.Max(maxDepth, maxOverallDepth);
             }
         }
         /// <summary>

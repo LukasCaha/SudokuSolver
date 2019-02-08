@@ -23,6 +23,7 @@ Výstupem pro každé zadání můžou být následující věci:
 Pro všechny zadání v jednom běhu vypočítá:
 * Průměrný počet použítí nelogického hádání
 * Maximální počet použítí nelogického hádání
+* Maximální celková hloubka vnoření
 
 ## Algoritmus
 ### Logika
