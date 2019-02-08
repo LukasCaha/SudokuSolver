@@ -31,11 +31,31 @@ namespace Sudoku
 
         //benchmarks
         static int numberOfGuesses = 0;
+        static List<string> sudokus = new List<string>();
         #endregion
 
         static void Main(string[] args)
         {
+            //Načte všechna zadání ze souboru
+            LoadFromFile("zadani.txt");
 
+            foreach (string sudoku in sudokus)
+            {
+                SudokuToTask(sudoku);
+                InitializeSudoku();
+                //PrintSudoku(true);
+                UpdateHints();
+                MakeImplications();
+                TakeGuess(0, 0, 1);
+                //PrintSudoku(true);
+                //Info();
+                if (numberOfGuesses > 60000)
+                {
+                    PrintSudoku(true);
+                    Info();
+                }
+            }
+            /*
             //před startem
             InitializeSudoku();
             ResetHints();
@@ -52,9 +72,8 @@ namespace Sudoku
             PrintSudoku(true);
 
             //kontrola
-            Info();
+            Info();*/
 
-            Console.WriteLine("Computational complexity:" + numberOfGuesses);
             //konec
             Console.ReadKey();
         }
@@ -88,12 +107,14 @@ namespace Sudoku
             {
                 Console.WriteLine("Pro dokončení sudoku musíš ještě pokračovat.");
             }
+            Console.WriteLine("Computational complexity:" + numberOfGuesses);
         }
         /// <summary>Obsahuje zadání sudoku.
         /// <para>Přepíše zadání do řešící mřížky a zachovává původní zadání pro pozdější využití.</para>
         /// </summary>
         static void InitializeSudoku()
         {
+
             //blank
             /*task = new int[,] {   { 0,0,0,0,0,0,0,0,0 },
                                     { 0,0,0,0,0,0,0,0,0 },
@@ -136,7 +157,7 @@ namespace Sudoku
                                     { 0,0,2,0,1,0,0,0,0 },
                                     { 0,0,0,0,4,0,0,0,9 }};*/
             //prej hardest
-            task = new int[,] {     { 8,0,0,0,0,0,0,0,0 },
+            /*task = new int[,] {     { 8,0,0,0,0,0,0,0,0 },
                                     { 0,0,3,6,0,0,0,0,0 },
                                     { 0,7,0,0,9,0,2,0,0 },
                                     { 0,5,0,0,0,7,0,0,0 },
@@ -144,7 +165,7 @@ namespace Sudoku
                                     { 0,0,0,1,0,0,0,3,0 },
                                     { 0,0,1,0,0,0,0,6,8 },
                                     { 0,0,8,5,0,0,0,1,0 },
-                                    { 0,9,0,0,0,0,4,0,0 }};
+                                    { 0,9,0,0,0,0,4,0,0 }};*/
 
             for (int row = 0; row < 9; row++)
             {
@@ -153,6 +174,12 @@ namespace Sudoku
                     pole[row, column] = task[row, column];
                 }
             }
+
+            ResetHints();
+
+            pastMoves.Clear();
+
+            numberOfGuesses = 0;
         }
         /// <summary>Vyprázdní tabulku nápověd.
         /// <para>Tabulka nápověd říká, zda na políčku (row,column) může být číslo (number)</para>     
@@ -751,7 +778,6 @@ namespace Sudoku
         /// <param name="pretty"></param>
         static void PrintSudoku(bool pretty)
         {
-            Console.Clear();
             if (!pretty)
             {
                 for (int row = 0; row < 9; row++)
@@ -806,5 +832,29 @@ namespace Sudoku
             }
             Console.WriteLine();
         }
+
+        #region experimental
+        static void LoadFromFile(string fileName)
+        {
+            string[] lines = System.IO.File.ReadAllLines(fileName);
+            for (int line = 0; line < lines.Length; line+=2)
+            {
+                sudokus.Add(lines[line]);
+            }
+        }
+        static void SudokuToTask(string sudoku)
+        {
+            for (int x = 0; x < 9; x++)
+            {
+                for (int y = 0; y < 9; y++)
+                {
+                    if (sudoku[x * 9 + y] == '.')
+                        task[x, y] = 0;
+                    else
+                        task[x, y] = (int)sudoku[x * 9 + y]-48;
+                }
+            }
+        }
+        #endregion
     }
 }
