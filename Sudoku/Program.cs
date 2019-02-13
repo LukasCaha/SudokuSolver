@@ -74,6 +74,8 @@ namespace Sudoku
 
         static void Main(string[] args)
         {
+            //Uvítání uživatele
+            WelcomeNote();
             //Načte všechna zadání ze souboru
             LoadFromFile("../zadani/jednoduche.txt");
             //LoadFromFile("../zadani/extremni.txt");
@@ -101,6 +103,40 @@ namespace Sudoku
             //konec
             EndInfo();
             Console.ReadKey();
+        }
+        /// <summary>
+        /// Uvítací text. Obsahuje základní informace o funkčnosti programu.
+        /// </summary>
+        static void WelcomeNote()
+        {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Console.WriteLine("Vítej v programu na řešení sudoku.");
+            Console.WriteLine("\tAutorem je Lukáš Caha z MFF UK, toto je zápočtový program pro Programování I");
+            Console.WriteLine("\nCo program umí?");
+            Console.WriteLine("\t1. Řeší sudoku z libovolného zadání");
+            Console.WriteLine("\t2. Umí načítat zadání ze souboru");
+            Console.WriteLine("\t3. Řešení u většiny zadání vypočítá v řádu milisekund");
+            Console.WriteLine("\t4. Vypisuje statistiky jednotilvých zadání a také souhrné statitstiky všech zadání");
+            Console.WriteLine("\nPro nápovědu zmáčkni tlačítko H");
+            Console.WriteLine("Pro pokračování zmáčkni libovolné tlačítko");
+            ConsoleKey key = Console.ReadKey().Key;
+            if (key == ConsoleKey.H)
+            {
+                Console.Clear();
+                Console.WriteLine("+-------------------------------+---------------------------------------+-----------------------+");
+                Console.WriteLine("| Název\t\t\t\t| Vysvětlení \t\t\t\t| Možné hodnoty \t|");
+                Console.WriteLine("+-------------------------------+---------------------------------------+-----------------------+");
+                Console.WriteLine("| Computational complexity \t| počet nelogických hádání čísel, \t| (0-infinity)\t\t|");
+                Console.WriteLine("|\t\t\t\t| neobjektivní hodnocení složitosti \t|\t\t\t|");
+                Console.WriteLine("|\t\t\t\t| zadání \t\t\t\t|\t\t\t|");
+                Console.WriteLine("+-------------------------------+---------------------------------------+-----------------------+");
+                Console.WriteLine("| Maximal depth \t\t| maximální hloubka vnoření rekurze, \t| (0-infinity)\t\t|");
+                Console.WriteLine("|\t\t\t\t| neobjektivní hodnocení složitosti \t|\t\t\t|");
+                Console.WriteLine("|\t\t\t\t| zadání \t\t\t\t|\t\t\t|");
+                Console.WriteLine("+-------------------------------+---------------------------------------+-----------------------+");
+                Console.WriteLine("Pro pokračování zmáčkni libovolné tlačítko");
+                key = Console.ReadKey().Key;
+            }
         }
 
         /// <summary>Info je funkce vypysující shrnující informace o aktuálním stavu sudoku.
