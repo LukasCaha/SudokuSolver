@@ -118,9 +118,7 @@ Pro statistické účely jsem zavedl několik proměnných počítající kroky 
 
 ### Hlavní funkce
 
-#### Logické kroky
-
-##### Uživatelské rozhraní
+#### Uživatelské rozhraní
 
 Program musí zajistit určitou úroveň uživatelského rozhraní. Výstup je konzolový. Využívá možností obarvování a formátování textu v C#.
 
@@ -133,7 +131,7 @@ Program musí zajistit určitou úroveň uživatelského rozhraní. Výstup je k
   * PrintSudoku(true) - V tabulce, zvýrazní zadání.
   * PrintSudoku(false) - 9x9 čísel
 
-##### Hinty
+#### Hinty
 
 Mezi funkce upravující proměnnou `hinty` patří:
 
@@ -144,7 +142,7 @@ Mezi funkce upravující proměnnou `hinty` patří:
   * SetSectorHints() - Využije pravidlo o opakování s sektoru.
 * DeleteHintsOnTile() - Pokud je políčko vyplněné, nemůže na něm být žádné jiné číslo.
 
-##### Logické
+#### Logické
 
 * SetTile() - Zapíše číslo na políčko a zaznamená krok do `pastMoves`.
 * MakeImplications() - Spouští na `pole` následující funkce:
@@ -153,32 +151,116 @@ Mezi funkce upravující proměnnou `hinty` patří:
   * SectorImplications() - V sektoru najde, jestli nemůže něco doplnit.
   * TileImplications() - Na políčku hledá, jestli nemůže něco doplnit.
   * Pokud jedna z funkcí něco změní, spouští se MakeImplications() znova.
+
+#### Rekurzivní
+
 * TakeGuess() - Rekurzivně hádá čísla na nedoplněných políčkách. 
   - RowImplications() - V řadě najde, jestli nemůže něco doplnit. Více viz. algoritmus.
 
-##### Testovací
+#### Testovací
 
 * IsSudokuValid() - Testuje zda v sudoku není chyba. Používá následující funkce:
   * IsRowValid() - V řádku se nic neopakuje.
-  * IsColumnValid
+  * IsColumnValid() - Ve slouci se nic neopakuje.
+  * IsSectorValid() - V sektrou se nic neopakuje.
+  * IsTileValid() - Testuje, zda je na políčku číslo, nebo alespoň jedno možné číslo.
+* IsSudokuComplete() - Testuje zda jsou všechny políčka vyplněná.
 
+#### Experimentální
 
+Nepřidávají funkčnost algoritmu, pouze na testování a pro budoucí funkce.
+
+* LoadFromFile() - Načítá zadání ze souboru.
+* SudokuToTask() - Po načtení ze souboru vloží jedno zadání do proměnné `task`.
+* RotateTask90Deg() - Otočí zadání o 90 stupňů.
+* TrySameSudokuRotated() - Pokud je sudoku moc složité na výpočet pomocé rekurze, otočí ho a zkusí to znovu.
+
+#### Ostatní
+
+* InitializeSudoku() - Přepíše zadání a obnoví hodnoty proměnných na původní hodnotu.
 
 ## Alternativní řešení
+
+### Logická vylepšení
+
+Existuje množství logických úvah, které obyčejný člověk při řešení sudoku používá, ale v programu nejsou implementovány. Hodně z nich je popsáno na [této stránce](https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php).
+
+### Praktická vylepšení
+
+Při návrhu tohoto rekurzivního řešení probíhá hádání čísel z levého horního rohu (souřadnice 0,0). Poté se postupuje po řádcích a to může mít za efekt jednu nepříjemnost. Jelikož je tento algoritmus předvídatelný, můžeme navrhnout zadání, které bude trvat na vyřešení velmi dlouho. Proto je dobré se dívat na zadání ze 4 různých směrů. Když proměnná `numberOfGuesses` určující "computational complexity", neboli složitost výpočtu, přesáhne určitou hranici můžeme řešení pozastavit, otočit zadání o 90° a zkusit řešit toto. Ukázalo se že v náhodně generovaných zadáních se objevují tyto složitě řešitelné zadání. A proto je tento krok užitečný i v běžné praxi, nejen když navrhujeme zadání, které se snaží být nevyřešitelná naším algoritmem.
+
+Existuje i spousta dalších míst v kódu, kdy předpokládáme určitý postup, který při návrhu nepříjemného zadání můžeme použít. Například to, že hádá od nejmenších k největším. Příkladem nepříjemného sudoku pro tento předpoklad je řešení, kde první řádek obsahuje 987654321, ale v zadání je prázdný.
+
+Takto můžeme udělat variace několika předpokladů a přepínat mezi nimi, v moment, kdy dojde k přesáhnutí určitého času řešení. Nejpokročilejším protivníkem nepříjemných zadání bude varianta, kde hádáme na náhodných políčkách náhodné čísla. Tato varianta je ale velice náročná na sledování postupu řešení, tedy na délu kódu.
 
 ## Komunikace s programem
 
 ### Vstupní data
 
+Pro běh programu je nutné tato souborová struktura:
+
+* [Hlavní složka]
+  * složka "zadani"
+    * textový soubor "jednoduche.txt"
+    * nebo textový soubor "extremni.txt"
+  * složka s programem
+
+Jméno souboru je defaultně "jednoduche.txt". Lze upravit v kódu.
+
+Soubor se zadáním může obsahovat neomezeně zadání. Je nutné speciální formátování.
+
+* Jedno zadání je na jednom řádku.
+  * Mřížku 9x9 rozložíme na jednotlivé řádky a ty poskládáme za sebe.
+  * Prázdná políčka reprezentujeme znakem `.` a čísla reprezentujeme čísly `1`-`9`.
+  * Po zadání vždy následuje prázdný řádek.
+
+Pokud takovýto soubor obsahující zadání exituje, můžeme spustit program.
+
 ### Výstupní data
 
+Výstup probíhá přímo do konzole. Uživatel je prováděn samotným programem.
+
+Pro správné zobrazení nápovědy doporučujeme šířku konzole 100 znaků.
+
+Při výstupu záleží na nastavení funkcí.
+
+Defaultně je výstupem:
+
+1. Vyřešená mřížka se zvýrazněným zadáním.
+2. Informace, zda je sudoku validní.
+3. Informace, zda je sudoku kompletní.
+4. Výpočetní složitost.
+5. Maximální hloubka rekurze.
+
+Po dopočítání všech zadání program vypíše statistiky:
+
+1. Průměrnou výpočetní složitost.
+2. Maximální výpočetní složitost.
+3. Maximální hloubku rekurze.
+
+## Osobní zhodnocení
+
+### Průběh práce
+
+Práce na programu probíhala ve dvou vlnách.
+
+První z nich byla hned ze začátku, kdy jsem naprogramoval veškeré logické kroky. Už od začátku jsem se snažil o strukturu programu, která mi v budoucnu nebude škodit. Poté jsem bez okomentování od programu na dva měsíce odešel.
+
+Druhá vlna byla těsně před termínem. Začal jsem porozumněním kódu, což bylo jednak ulehčeno strukturou funkcí, ale zkomplikováno neokomentováním. V rámci porozumnění jsem vše podrobně okomentoval. Snažil jsem se dopragramovat rekurzi efektivní cestou, kdy není nutné kopírovat mřížky mezi jednotlivmi zanořeními. Tohoto rozhodnutí nelituji i když jsem nad tím strávil mnohem více času.
+
+### Co nebylo doděláno
+
+Ke konci práce jsem dostal několik dobrých nápadů na optimalizaci.
+
+* Urychlení řešení složitých zadání otočením o 90°.
+* Optimalizace systému nápověd, kdy každé políčko má i množství zbývajících čísel, ne jen pole, ze kterého to musím pokaždé vyčíst.
+* Rozšíření na generování zadání.
+* Určení, zda je moje řešení jediné. Pravidla sice nepožadují aby hráč našel všechna řešení, ale s počítačem je to jednoduše možné.
 
 
-
-
-
-## Co jsem se naučil
-Tento projekt mě naučil vhodně popisovat části programu pomocí markdown jazyka dostupného ve Visual Studiu. 
+### Co jsem se naučil
+Tento projekt mě naučil vhodně popisovat části programu pomocí markup jazyka dostupného ve Visual Studiu. Také jsem k programu napsal dokumentaci.
 Vyzkoušel jsem si algoritmus užívající komplexní rekurzi.
 Rozmyslel jsem si několik nápadů na zlepšení, které nejsou nutné, ale zapsal si je pro budoucí vylepšení.
 A v neposlední řadě jsem dokázal triviální řešení s velkou paměťovou složitostí optimalizovat.
+
