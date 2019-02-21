@@ -24,7 +24,7 @@ Výstupem pro každé zadání můžou být následující věci:
   * Maximální hloubka vnoření
   
 
-Pro všechny zadání v jednom běhu vypočítá:
+Pro všechna zadání v jednom běhu vypočítá:
 * Průměrný počet použití nelogického hádání
 * Maximální počet použití nelogického hádání
 * Celková maximální hloubka vnoření
@@ -32,7 +32,7 @@ Pro všechny zadání v jednom běhu vypočítá:
 ## Algoritmus
 ### Logika
 Program se snaží co nejvíce využívat pravidel hry. Vždy než začne program hádat, jsou vyčerpané všechny základní logické kroky.
-Používá systém nápověd, kdy o každém políčku víme všechny čísla, která jsou do něj možná zapsat. Poté používá tyto 4 algoritmy
+Používá systém nápověd, kdy o každém políčku víme všechna čísla, která jsou do něj možná zapsat. Poté používá tyto 4 algoritmy
 na logické odvození co nejvíce čísel:
 
 * Řádková logika
@@ -55,7 +55,7 @@ Má v sobě implementované dvě metriky pro rozhodování o dalším postupu.
   * Jsou všechna políčka vyplněná
   
 
-Pokud našel chybu automaticky vrací kroky.
+Pokud našel chybu, automaticky vrací kroky.
 
 Pokud nenašel chybu a není u konce, pokračuje.
 
@@ -94,7 +94,7 @@ V průběhu řešení si program ukládá kroky, aby je mohl při rekurzi vracet
 
 ##### Řešení
 
-Následující 4 globální proměnné obsahují vše potřebné pro řešení. Většinou se jedná o více rozměrné pole, pro organizované uložení všech dat o mřížce.
+Následující 4 globální proměnné obsahují vše potřebné pro řešení. Většinou se jedná o několika rozměrná pole, pro organizované uložení všech dat o mřížce.
 
 * Zadání sudoku, po dobu řešení se nemění, je důležité pro výpis. `task[x,y]` je číslo na souřadnicích `x`, `y`. Pokud je pole prázdné `task[x,y] = 0`. 
 
@@ -104,17 +104,17 @@ Následující 4 globální proměnné obsahují vše potřebné pro řešení. 
 
 `static int[,] pole = new int[9, 9];`
 
-* V tomto trojrozměrném poli jsou uloženy možnosti pro každé políčko. Má klasickou strukturu jako dvě předchozí proměnné, ale navíc má třetí rozměr, ve kterém je pro každé číslo uložen `bool`. Ten říká jestli číslo `n` může být na souřadnicích `x`, `y`.  Pokud tam číslo může být, tak `hinty[x, y, n] = true`. A jestli ne tak `hinty[x, y, n] = false`.
+* V tomto trojrozměrném poli jsou uloženy možnosti pro každé políčko. Má klasickou strukturu jako dvě předchozí proměnné, ale navíc má třetí rozměr, ve kterém je pro každé číslo uložen `bool`. Ten říká, jestli číslo `n` může být na souřadnicích `x`, `y`.  Pokud tam číslo může být, tak `hinty[x, y, n] = true`. A jestli ne, tak `hinty[x, y, n] = false`.
 
 `static bool[,,] hinty = new bool[9, 9, 10];`
 
-* V tomto dynamickém poli jsou uloženy všechny minulé kroky. Díky metodě řešení, kterou jsem si zvolil musí být postup od zadání k aktuálnímu stavu lineární, takže vždy půjde postup zaznamenat do lineárního pole.
+* V tomto dynamickém poli jsou uloženy všechny minulé kroky. Díky metodě řešení, kterou jsem si zvolil, musí být postup od zadání k aktuálnímu stavu lineární, takže vždy půjde postup zaznamenat do lineárního pole.
 
 `static List<Move> pastMoves = new List<Move>();`
 
 ##### Statistika
 
-Pro statistické účely jsem zavedl několik proměnných počítající kroky řešení a hlavně údaje o průběhu rekurze.
+Pro statistické účely jsem zavedl několik proměnných počítajících kroky řešení a hlavně údaje o průběhu rekurze.
 
 ### Hlavní funkce
 
@@ -139,7 +139,7 @@ Mezi funkce upravující proměnnou `hinty` patří:
 * UpdateHints() - Spouští následující funkce:
   * SetColumnHints() - Využije pravidlo o opakování ve sloupci.
   * SetRowHints() - Využije pravidlo o opakování v řádku.
-  * SetSectorHints() - Využije pravidlo o opakování s sektoru.
+  * SetSectorHints() - Využije pravidlo o opakování v sektoru.
 * DeleteHintsOnTile() - Pokud je políčko vyplněné, nemůže na něm být žádné jiné číslo.
 
 #### Logické
@@ -159,12 +159,12 @@ Mezi funkce upravující proměnnou `hinty` patří:
 
 #### Testovací
 
-* IsSudokuValid() - Testuje zda v sudoku není chyba. Používá následující funkce:
+* IsSudokuValid() - Testuje, zda v sudoku není chyba. Používá následující funkce:
   * IsRowValid() - V řádku se nic neopakuje.
   * IsColumnValid() - Ve slouci se nic neopakuje.
-  * IsSectorValid() - V sektrou se nic neopakuje.
+  * IsSectorValid() - V sektoru se nic neopakuje.
   * IsTileValid() - Testuje, zda je na políčku číslo, nebo alespoň jedno možné číslo.
-* IsSudokuComplete() - Testuje zda jsou všechny políčka vyplněná.
+* IsSudokuComplete() - Testuje, zda jsou všechna políčka vyplněná.
 
 #### Experimentální
 
@@ -187,17 +187,17 @@ Existuje množství logických úvah, které obyčejný člověk při řešení 
 
 ### Praktická vylepšení
 
-Při návrhu tohoto rekurzivního řešení probíhá hádání čísel z levého horního rohu (souřadnice 0,0). Poté se postupuje po řádcích a to může mít za efekt jednu nepříjemnost. Jelikož je tento algoritmus předvídatelný, můžeme navrhnout zadání, které bude trvat na vyřešení velmi dlouho. Proto je dobré se dívat na zadání ze 4 různých směrů. Když proměnná `numberOfGuesses` určující "computational complexity", neboli složitost výpočtu, přesáhne určitou hranici můžeme řešení pozastavit, otočit zadání o 90° a zkusit řešit toto. Ukázalo se že v náhodně generovaných zadáních se objevují tyto složitě řešitelné zadání. A proto je tento krok užitečný i v běžné praxi, nejen když navrhujeme zadání, které se snaží být nevyřešitelná naším algoritmem.
+Při návrhu tohoto rekurzivního řešení probíhá hádání čísel z levého horního rohu (souřadnice 0,0). Poté se postupuje po řádcích a to může mít za efekt jednu nepříjemnost. Jelikož je tento algoritmus předvídatelný, můžeme navrhnout zadání, které bude trvat na vyřešení velmi dlouho. Proto je dobré se dívat na zadání ze 4 různých směrů. Když proměnná `numberOfGuesses` určující "computational complexity", neboli složitost výpočtu přesáhne určitou hranici, můžeme řešení pozastavit, otočit zadání o 90° a zkusit řešit toto. Ukázalo se, že v náhodně generovaných zadáních se objevují tyto složitě řešitelná zadání. A proto je tento krok užitečný i v běžné praxi, nejen když necháváme program vyřešit zadání, navržená kompletně proti jeho schopnostem.
 
 Existuje i spousta dalších míst v kódu, kdy předpokládáme určitý postup, který při návrhu nepříjemného zadání můžeme použít. Například to, že hádá od nejmenších k největším. Příkladem nepříjemného sudoku pro tento předpoklad je řešení, kde první řádek obsahuje 987654321, ale v zadání je prázdný.
 
-Takto můžeme udělat variace několika předpokladů a přepínat mezi nimi, v moment, kdy dojde k přesáhnutí určitého času řešení. Nejpokročilejším protivníkem nepříjemných zadání bude varianta, kde hádáme na náhodných políčkách náhodné čísla. Tato varianta je ale velice náročná na sledování postupu řešení, tedy na délu kódu.
+Takto můžeme udělat variace několika předpokladů a přepínat mezi nimi, v moment, kdy dojde k přesáhnutí určitého času řešení. Nejpokročilejším protivníkem nepříjemných zadání bude varianta, kde hádáme na náhodných políčkách náhodná čísla. Tato varianta je ale velice náročná na sledování postupu řešení, tedy na délu kódu.
 
 ## Komunikace s programem
 
 ### Vstupní data
 
-Pro běh programu je nutné tato souborová struktura:
+Pro běh programu je nutná tato souborová struktura:
 
 * [Hlavní složka]
   * složka "zadani"
@@ -214,7 +214,7 @@ Soubor se zadáním může obsahovat neomezeně zadání. Je nutné speciální 
   * Prázdná políčka reprezentujeme znakem `.` a čísla reprezentujeme čísly `1`-`9`.
   * Po zadání vždy následuje prázdný řádek.
 
-Pokud takovýto soubor obsahující zadání exituje, můžeme spustit program.
+Pokud takovýto soubor obsahující zadání existuje, můžeme spustit program.
 
 ### Výstupní data
 
@@ -246,7 +246,7 @@ Práce na programu probíhala ve dvou vlnách.
 
 První z nich byla hned ze začátku, kdy jsem naprogramoval veškeré logické kroky. Už od začátku jsem se snažil o strukturu programu, která mi v budoucnu nebude škodit. Poté jsem bez okomentování od programu na dva měsíce odešel.
 
-Druhá vlna byla těsně před termínem. Začal jsem porozumněním kódu, což bylo jednak ulehčeno strukturou funkcí, ale zkomplikováno neokomentováním. V rámci porozumnění jsem vše podrobně okomentoval. Snažil jsem se dopragramovat rekurzi efektivní cestou, kdy není nutné kopírovat mřížky mezi jednotlivmi zanořeními. Tohoto rozhodnutí nelituji i když jsem nad tím strávil mnohem více času.
+Druhá vlna byla těsně před termínem. Začal jsem porozumněním kódu, což bylo jednak ulehčeno strukturou funkcí, ale zkomplikováno neokomentováním. V rámci porozumnění jsem vše podrobně okomentoval. Snažil jsem se doprogramovat rekurzi efektivní cestou, kdy není nutné kopírovat mřížky mezi jednotlivmi zanořeními. Tohoto rozhodnutí nelituji i když jsem nad tím strávil mnohem více času.
 
 ### Co nebylo doděláno
 
@@ -255,7 +255,7 @@ Ke konci práce jsem dostal několik dobrých nápadů na optimalizaci.
 * Urychlení řešení složitých zadání otočením o 90°.
 * Optimalizace systému nápověd, kdy každé políčko má i množství zbývajících čísel, ne jen pole, ze kterého to musím pokaždé vyčíst.
 * Rozšíření na generování zadání.
-* Určení, zda je moje řešení jediné. Pravidla sice nepožadují aby hráč našel všechna řešení, ale s počítačem je to jednoduše možné.
+* Určení, zda je moje řešení jediné. Pravidla sice nepožadují, aby hráč našel všechna řešení, ale s počítačem je to jednoduše možné.
 
 
 ### Co jsem se naučil
@@ -264,3 +264,4 @@ Vyzkoušel jsem si algoritmus užívající komplexní rekurzi.
 Rozmyslel jsem si několik nápadů na zlepšení, které nejsou nutné, ale zapsal si je pro budoucí vylepšení.
 A v neposlední řadě jsem dokázal triviální řešení s velkou paměťovou složitostí optimalizovat.
 
+​	
