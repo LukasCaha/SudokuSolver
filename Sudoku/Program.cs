@@ -109,7 +109,7 @@ namespace Sudoku
         /// </summary>
         static void WelcomeNote()
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Console.OutputEncoding = System.Text.Encoding.Unicode;
             Console.WriteLine("Vítej v programu na řešení sudoku.");
             Console.WriteLine("\tAutorem je Lukáš Caha z MFF UK, toto je zápočtový program pro Programování I");
             Console.WriteLine("\nCo program umí?");
